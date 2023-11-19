@@ -1,22 +1,24 @@
 pub struct Game {
+    ball: u32,
     score: u32,
     throws: [u32; 21],
     current_throw: u32,
     current_frame: u32,
-    is_first_throw: bool,
+    first_throw_in_frame: bool,
 }
 
 impl Game {
     pub fn new() -> Self {
         Game {
+            ball: 0,
             score: 0,
             throws: [0; 21],
             current_throw: 0,
             current_frame: 1,
-            is_first_throw: true,
+            first_throw_in_frame: true,
         }
     }
-    pub fn score(&self) -> u32 {
+    pub fn score(&mut self) -> u32 {
         self.score_for_frame(self.get_current_frame() - 1)
     }
     pub fn add(&mut self, pins: u32) {
@@ -25,23 +27,19 @@ impl Game {
         self.score += pins;
         self.adjust_current_frame(pins);
     }
-    pub fn score_for_frame(&self, frame: u32) -> u32 {
+    pub fn score_for_frame(&mut self, frame: u32) -> u32 {
+        self.ball = 0;
         let mut score = 0;
-        let mut ball = 0;
         for _current_frame in 0..frame {
-            let first_throw = self.throws[ball as usize];
-            ball += 1;
-            if first_throw == 10 {
-                score += 10 + self.throws[ball as usize] + self.throws[(ball + 1) as usize]
+            if self.strike() {
+                score += 10 + self.next_two_balls_for_strike();
+                self.ball += 1;
+            } else if self.spare() {
+                score += 10 + self.next_ball_for_spare();
+                self.ball += 2;
             } else {
-                let second_throw = self.throws[ball as usize];
-                ball += 1;
-                let frame_score = first_throw + second_throw;
-                if frame_score == 10 {
-                    score += frame_score + self.throws[ball as usize];
-                } else {
-                    score += frame_score;
-                }
+                score += self.two_balls_in_frame();
+                self.ball += 2;
             }
         }
         score
@@ -50,17 +48,32 @@ impl Game {
         self.current_frame
     }
     fn adjust_current_frame(&mut self, pins: u32) {
-        if self.is_first_throw {
+        if self.first_throw_in_frame {
             if pins == 10 {
                 self.current_frame += 1;
             } else {
-                self.is_first_throw = false;
+                self.first_throw_in_frame = false;
             }
         } else {
-            self.is_first_throw = true;
+            self.first_throw_in_frame = true;
             self.current_frame += 1;
         }
         self.current_frame = std::cmp::min(11, self.current_frame);
+    }
+    fn strike(&self) -> bool {
+        self.throws[self.ball as usize] == 10
+    }
+    fn next_two_balls_for_strike(&self) -> u32 {
+        self.throws[(self.ball + 1) as usize] + self.throws[(self.ball + 2) as usize]
+    }
+    fn spare(&self) -> bool {
+        (self.throws[self.ball as usize] + self.throws[(self.ball + 1) as usize]) == 10
+    }
+    fn next_ball_for_spare(&self) -> u32 {
+        self.throws[(self.ball + 2) as usize]
+    }
+    fn two_balls_in_frame(&self) -> u32 {
+        self.throws[self.ball as usize] + self.throws[(self.ball + 1) as usize]
     }
 }
 
