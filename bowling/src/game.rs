@@ -1,7 +1,6 @@
 use crate::scorer::Scorer;
 
 pub struct Game {
-    score: u32,
     current_frame: u32,
     first_throw_in_frame: bool,
     scorer: Scorer,
@@ -10,38 +9,36 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         Game {
-            score: 0,
             current_frame: 1,
             first_throw_in_frame: true,
             scorer: Scorer::new(),
         }
     }
     pub fn score(&mut self) -> u32 {
-        self.score_for_frame(self.get_current_frame() - 1)
-    }
-    pub fn get_current_frame(&self) -> u32 {
-        self.current_frame
+        self.score_for_frame(self.current_frame)
     }
     pub fn add(&mut self, pins: u32) {
         self.scorer.add_throw(pins);
-        self.score += pins;
         self.adjust_current_frame(pins);
+    }
+    fn adjust_current_frame(&mut self, pins: u32) {
+        if self.last_ball_in_frame(pins) {
+            self.advance_frame();
+        } else {
+            self.first_throw_in_frame = false;
+        }
+    }
+    fn last_ball_in_frame(&self, pins: u32) -> bool {
+        self.strike(pins) || !self.first_throw_in_frame
+    }
+    fn strike(&self, pins: u32) -> bool {
+        self.first_throw_in_frame && pins == 10
+    }
+    fn advance_frame(&mut self) {
+        self.current_frame = std::cmp::min(10, self.current_frame + 1)
     }
     pub fn score_for_frame(&mut self, frame: u32) -> u32 {
         self.scorer.score_for_frame(frame)
-    }
-    fn adjust_current_frame(&mut self, pins: u32) {
-        if self.first_throw_in_frame {
-            if pins == 10 {
-                self.current_frame += 1;
-            } else {
-                self.first_throw_in_frame = false;
-            }
-        } else {
-            self.first_throw_in_frame = true;
-            self.current_frame += 1;
-        }
-        self.current_frame = std::cmp::min(11, self.current_frame);
     }
 }
 
@@ -55,7 +52,6 @@ mod tests {
         g.add(5);
         g.add(4);
         assert_eq!(9, g.score());
-        assert_eq!(2, g.get_current_frame());
     }
 
     #[test]
@@ -68,7 +64,6 @@ mod tests {
         assert_eq!(18, g.score());
         assert_eq!(9, g.score_for_frame(1));
         assert_eq!(18, g.score_for_frame(2));
-        assert_eq!(3, g.get_current_frame());
     }
 
     #[test]
@@ -78,7 +73,6 @@ mod tests {
         g.add(7);
         g.add(3);
         assert_eq!(13, g.score_for_frame(1));
-        assert_eq!(2, g.get_current_frame());
     }
 
     #[test]
@@ -91,7 +85,6 @@ mod tests {
         assert_eq!(13, g.score_for_frame(1));
         assert_eq!(18, g.score_for_frame(2));
         assert_eq!(18, g.score());
-        assert_eq!(3, g.get_current_frame());
     }
 
     #[test]
@@ -102,7 +95,6 @@ mod tests {
         g.add(6);
         assert_eq!(19, g.score_for_frame(1));
         assert_eq!(28, g.score());
-        assert_eq!(3, g.get_current_frame());
     }
 
     #[test]
@@ -112,7 +104,6 @@ mod tests {
             g.add(10);
         }
         assert_eq!(300, g.score());
-        assert_eq!(11, g.get_current_frame());
     }
 
     #[test]

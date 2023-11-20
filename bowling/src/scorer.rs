@@ -36,11 +36,11 @@ impl Scorer {
     fn strike(&self) -> bool {
         self.throws[self.ball as usize] == 10
     }
-    fn next_two_balls_for_strike(&self) -> u32 {
-        self.throws[(self.ball + 1) as usize] + self.throws[(self.ball + 2) as usize]
-    }
     fn spare(&self) -> bool {
         (self.throws[self.ball as usize] + self.throws[(self.ball + 1) as usize]) == 10
+    }
+    fn next_two_balls_for_strike(&self) -> u32 {
+        self.throws[(self.ball + 1) as usize] + self.throws[(self.ball + 2) as usize]
     }
     fn next_ball_for_spare(&self) -> u32 {
         self.throws[(self.ball + 2) as usize]
