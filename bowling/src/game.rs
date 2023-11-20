@@ -1,51 +1,34 @@
+use crate::scorer::Scorer;
+
 pub struct Game {
-    ball: u32,
     score: u32,
-    throws: [u32; 21],
-    current_throw: u32,
     current_frame: u32,
     first_throw_in_frame: bool,
+    scorer: Scorer,
 }
 
 impl Game {
     pub fn new() -> Self {
         Game {
-            ball: 0,
             score: 0,
-            throws: [0; 21],
-            current_throw: 0,
             current_frame: 1,
             first_throw_in_frame: true,
+            scorer: Scorer::new(),
         }
     }
     pub fn score(&mut self) -> u32 {
         self.score_for_frame(self.get_current_frame() - 1)
     }
+    pub fn get_current_frame(&self) -> u32 {
+        self.current_frame
+    }
     pub fn add(&mut self, pins: u32) {
-        self.throws[self.current_throw as usize] = pins;
-        self.current_throw += 1;
+        self.scorer.add_throw(pins);
         self.score += pins;
         self.adjust_current_frame(pins);
     }
     pub fn score_for_frame(&mut self, frame: u32) -> u32 {
-        self.ball = 0;
-        let mut score = 0;
-        for _current_frame in 0..frame {
-            if self.strike() {
-                score += 10 + self.next_two_balls_for_strike();
-                self.ball += 1;
-            } else if self.spare() {
-                score += 10 + self.next_ball_for_spare();
-                self.ball += 2;
-            } else {
-                score += self.two_balls_in_frame();
-                self.ball += 2;
-            }
-        }
-        score
-    }
-    pub fn get_current_frame(&self) -> u32 {
-        self.current_frame
+        self.scorer.score_for_frame(frame)
     }
     fn adjust_current_frame(&mut self, pins: u32) {
         if self.first_throw_in_frame {
@@ -59,21 +42,6 @@ impl Game {
             self.current_frame += 1;
         }
         self.current_frame = std::cmp::min(11, self.current_frame);
-    }
-    fn strike(&self) -> bool {
-        self.throws[self.ball as usize] == 10
-    }
-    fn next_two_balls_for_strike(&self) -> u32 {
-        self.throws[(self.ball + 1) as usize] + self.throws[(self.ball + 2) as usize]
-    }
-    fn spare(&self) -> bool {
-        (self.throws[self.ball as usize] + self.throws[(self.ball + 1) as usize]) == 10
-    }
-    fn next_ball_for_spare(&self) -> u32 {
-        self.throws[(self.ball + 2) as usize]
-    }
-    fn two_balls_in_frame(&self) -> u32 {
-        self.throws[self.ball as usize] + self.throws[(self.ball + 1) as usize]
     }
 }
 
